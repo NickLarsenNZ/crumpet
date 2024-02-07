@@ -18,8 +18,10 @@
 - [ ] Run `crumpet` at the template source (needs to know the remote repos to template, and have permission to raise PRs)
 - [ ] Run `crumpet` at the destination (no tracking required, simpler permissions for raising PRs, can run locally to initialise a new repo)
 - [ ] How should we "mark" templated files? Two obvious options come to mind: `file.tera.<EXT>` or `file.<EXT>.tera`
+  - @NickLarsenNZ: I think both should be valid. The former allows for better syntax highlighting.
 - [ ] How do we handle files which are not templated (don't include above naming convention)? Just copy them over? Should
       we make this behaviour configurable? (Yes)
+  - @NickLarsenNZ: I think just copied, because they might be static files that are still content templates
 - [ ] Solve all open questions about the example config file below.
 
 ## Configuration
@@ -32,24 +34,20 @@ If run a the destination repo...
    version: blah
    template:
      source: https://github.com/example/template
-     # Should we use 'ref' as the key here? Also add documentation for this key, it basically can be a tag, commit or branch.
-     hash: abcdef0
+     # Add documentation for this key, it basically can be a tag, commit or branch. A commitish
+     ref: abcdef0
    pull_request:
      enabled: true # although, what happens if you run it locally to test? Some CIs give an env var so you can tell if it is run via CI
      is_draft: false # Mark the PR as a draft
      # the following can be specified in pull request template frontmatter - which takes precedence?
      title:
-      content: "chore: Apply template changes"
-      # OR
-      # Inline template or template file (resolves to .crumpet/templates/my-template).
-      # How do we handle inline template vs template file?
-      template: "chore: Apply template changes from ref:{{revision}}"
+       template: "chore: Apply template changes from ref:{{revision}}"
+       # OR template file (resolves to .crumpet/templates/title-template).
+       template_file: my-template
      body:
-       content: My PR body text content
-       # OR
-       # Inline template or template file (resolves to .crumpet/templates/my-template).
-       # How do we handle inline template vs template file?
-       template: my-template
+       template: Please double check the changes are safe before merging
+       # OR template file (resolves to .crumpet/templates/body-template).
+       template_file: body-template
      labels: [size/s]
      assignees: [developers]
    ```
