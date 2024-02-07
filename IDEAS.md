@@ -40,11 +40,11 @@ If run a the destination repo...
      enabled: true # although, what happens if you run it locally to test? Some CIs give an env var so you can tell if it is run via CI
      is_draft: false # Mark the PR as a draft
      # the following can be specified in pull request template frontmatter - which takes precedence?
-     title:
+     title: # can provide a string here to be used as the inline tempalte, or the explicit keys below:
        template: "chore: Apply template changes from ref:{{revision}}"
        # OR template file (resolves to .crumpet/templates/title-template).
        template_file: my-template
-     body:
+     body: # can provide a string here to be used as the inline tempalte, or the explicit keys below:
        template: Please double check the changes are safe before merging
        # OR template file (resolves to .crumpet/templates/body-template).
        template_file: body-template
