@@ -9,6 +9,7 @@
 - Pull request template
 - Package for [`asdf`](https://asdf-vm.com/plugins/create.html)
 - Package for [`cargo install`](https://doc.rust-lang.org/cargo/reference/publishing.html)
+- Package for [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall)
 - Provide a [nix flake, use crane](https://fasterthanli.me/series/building-a-rust-service-with-nix/part-11#building-catscii-with-nix-build)
 - Make a Github Action
 
@@ -60,7 +61,7 @@ such functions also helps users to avoid escaping curly brackets while producing
 for example). A few of these functions come to mind:
 
 | Input (Tera)                 | Rendered Output    | Notes                                                                                                                                  |
-| ---------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| :--------------------------- | :----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `{{ github::expr(<EXPR>) }}` | `${{ <EXPR> }}`    | -                                                                                                                                      |
 | `{{ github::env(<VAR>) }}`   | `${{ env.<VAR> }}` | The same output can be achieved using `github::expr(env.<VAR>)`. This function simply provides a shorthand for such a common use-case. |
 | `{{ rand::nanoid }}`         | `<NANO_ID>`        | Outputs a random Nanoid. (Do we really need this?)                                                                                     |
