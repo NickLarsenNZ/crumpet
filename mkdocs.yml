@@ -1,0 +1,5 @@
+site_name: Crumpet - User Guide
+site_dir: .docs-build
+
+theme:
+  name: material
