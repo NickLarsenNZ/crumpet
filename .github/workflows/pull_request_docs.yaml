@@ -16,7 +16,7 @@
           with:
             python-version: '3.11.6'
             cache: 'pip'
-        - run: pip install -r requirement.txt
+        - run: pip install -r requirements.txt
         - run: mkdocs build --clean --strict --verbose
     
     check-links:
