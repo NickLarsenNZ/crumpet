@@ -1,6 +1,6 @@
 # Ideas
 
-- Support [`Jinja2`](https://docs.rs/minijinja/latest/minijinja/) for those more familiar to that
+- ~Support [`Jinja2`](https://docs.rs/minijinja/latest/minijinja/) for those more familiar to that~
 - Use [`tera`](https://github.com/Keats/tera) as the templating engine
 - Use [`gitoxide`](https://github.com/Byron/gitoxide) for git operations
 - Use [`octorust`](https://docs.rs/octorust/latest/octorust/) for Github API interactions
