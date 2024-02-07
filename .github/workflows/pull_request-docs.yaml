@@ -22,7 +22,7 @@
             cache: 'pip'
 
         - name: Install Python dependencies
-          run: pip install -r requirement.txt
+          run: pip install -r requirements.txt
 
         - name: Build Docs
           run: mkdocs build --clean --strict --verbose
