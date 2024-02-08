@@ -9,6 +9,9 @@ on:
       - "mkdocs.yml"
       - "docs/**"
 
+permissions:
+  contents: write
+
 jobs:
   publish-docs:
     name: Build Docs
