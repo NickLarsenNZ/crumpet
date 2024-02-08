@@ -1,0 +1,10 @@
+[package]
+name = "crumpet-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap.workspace = true
+clap_complete.workspace = true
+snafu.workspace = true
+tokio.workspace = true
