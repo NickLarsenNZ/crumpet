@@ -24,6 +24,12 @@
   - @NickLarsenNZ: I think just copied, because they might be static files that are still content templates
 - [ ] Solve all open questions about the example config file below.
 
+## Commands
+
+- Have a `crumpet check` command, which validates that all templated files are up-to-date and were additionally not
+  modified by something outside of crumpet (for example manually changed by a developer). This could go hand-in-hand
+  with a local `.crumpetignore` file, which can exclude templated files from being checked / templated.
+
 ## Configuration
 
 If run a the destination repo...
