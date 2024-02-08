@@ -1,5 +1,58 @@
 site_name: Crumpet - User Guide
-site_dir: .docs-build
+site_dir: .docs/build
+
+repo_url: https://github.com/NickLarsenNZ/crumpet
+repo_name: NickLarsenNZ/crumpet
 
 theme:
   name: material
+  # font: false    # Disable auto Google Fonts loading
+
+  palette:
+    - scheme: default
+      primary: lime
+      accent: light green
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: lime
+      accent: light green
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+   # Navigation setup
+  features:
+    - navigation.instant     # Enable instant loading, this doesn't reload the page but fetches the contents via AJAX
+    - navigation.tabs        # Enable tab navigation
+    - navigation.tabs.sticky # Navigation tabs will be visible when scrolling
+    - navigation.top         # Enable 'back to top' button
+    - navigation.sections    # Enable nav sections
+    - navigation.indexes     # Enable section index pages
+    - content.code.annotate  # Enable code annotations
+    - content.action.edit    # Enable edit button
+    - content.action.view    # Enable "show source" button
+
+plugins:
+  - search
+  - privacy:
+      enabled: true
+      cache_dir: .docs/cache
+  - minify:
+      minify_html: true
+      htmlmin_opts:
+        remove_comments: true
+  - git-revision-date-localized:
+      enabled: !ENV [CI, false]
+      enable_creation_date: true
+      locale: de
+
+markdown_extensions:
+  - pymdownx.caret        # Support for underlining text
+  - pymdownx.mark         # Support for marking text with the transparent accent color
+  - pymdownx.tilde        # Support for striking through text
+  - pymdownx.highlight    # Support for syntax highlighting in code blocks
+  - pymdownx.inlinehilite # Support for syntax highlighting in inline code blocks
+  - pymdownx.snippets     # Support for importing external file content with snippets
+  - pymdownx.superfences  # Support for nested code and content blocks

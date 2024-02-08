@@ -2,5 +2,5 @@
 /target
 
 # Docs
-.docs-build
+.docs
 .venv
