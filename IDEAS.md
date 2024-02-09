@@ -51,6 +51,13 @@ If run a the destination repo...
       # should allow referencing a (local) file path here.
       source: https://github.com/example/template
 
+      # @NickLarsenNZ: I think it is better to have a separate key 
+      # for the path, rather than adding to the url above, but if we
+      # support local paths for the source, then this feels a little
+      # redundant. Unless the source should be the root because it
+      # contains some metadata aside from the template files.
+      template_directory: my_template # defaults to template
+
       # Add documentation for this key, it basically can be a tag,
       # commit or branch - a commitish. When we also support local
       # file paths, do we just ignore this key? Or de we use some
