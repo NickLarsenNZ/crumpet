@@ -114,3 +114,15 @@ for example). A few of these functions come to mind:
 | `{{ github::expr(<EXPR>) }}` | `${{ <EXPR> }}`    | -                                                                                                                                      |
 | `{{ github::env(<VAR>) }}`   | `${{ env.<VAR> }}` | The same output can be achieved using `github::expr(env.<VAR>)`. This function simply provides a shorthand for such a common use-case. |
 | `{{ rand::nanoid }}`         | `<NANO_ID>`        | Outputs a random Nanoid. (Do we really need this?)                                                                                     |
+
+## High-Level Module Overview
+
+- `git`: This module contains code to handle fetching template files from remote Git repositories. Internally it uses
+  the `gitoxide` crate.
+- `template`: This module contains code to render templated files. The code will render files in parallel (async). For
+  templating it uses the `tera` crate. It also provides the helper functions and the render context. This module doesn't
+  handle filesystem operations like globbing, reading, and writing data.
+- `fs`: This module handles globbing and async operations like reading and writing files.
+- `providers`:
+  - `github`
+  - ...
