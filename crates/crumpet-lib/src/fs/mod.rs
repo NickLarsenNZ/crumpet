@@ -7,7 +7,7 @@ use crate::fs::paths::PathBufExt;
 
 pub mod paths;
 
-const DEFAULT_MATCH_PATTERN: &str = "**/*.tera";
+const DEFAULT_MATCH_PATTERN: &str = "**/*.tera*";
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -98,6 +98,7 @@ mod test {
     #[rstest]
     fn file_list(fixtures_path: PathBuf) {
         let paths = build_file_list(fixtures_path).unwrap();
-        println!("{paths:?}");
+        println!("{paths:#?}");
+        assert_eq!(paths.len(), 3)
     }
 }
