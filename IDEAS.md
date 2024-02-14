@@ -40,9 +40,13 @@ If run a the destination repo...
    ```yaml
     # What casing should we use for the keys? Kubernetes uses camelCase
     # and Rust uses snake_case. Serde supports both and more.
+    # @NickLarsenNZ: I vote for snake_case (as per below), but if you feel
+    # strongly about camelCase, I'm not opposed.
 
     # Version of what? Crumpet? If so, how do we handle version conflicts?
-    version: blah
+    # @NickLarsenNZ: version of the crumpet config schema (in case we want
+    # to make major changes to it).
+    version: 1.0-alpha
 
     template:
       # We might want to support different backends here. The most
@@ -62,14 +66,27 @@ If run a the destination repo...
       # commit or branch - a commitish. When we also support local
       # file paths, do we just ignore this key? Or de we use some
       # kind of complex enum.
+      # @NickLarsenNZ: Good question. Maybe we should make the template
+      # `source` key contain everything necessary for whatever backends.
+      # eg: 
+      #   source: https://github.com/example/template.git//my_template#abcdef
+      #   source: git@github.com:example/template.git//my_template#abcdef
+      #   source: ./my_template
+      # Here are some examples from Terraform:
+      # - https://developer.hashicorp.com/terraform/language/modules/sources#github
+      # - https://developer.hashicorp.com/terraform/language/modules/sources#generic-git-repository
+      # - https://developer.hashicorp.com/terraform/language/modules/sources#modules-in-package-sub-directories
+      # Or, we could change the `source` key to `git`, `directory`, etc.. with `ref` being exclusive to the relevant backends.
       ref: abcdef0
 
     pull_request:
       # Although, what happens if you run it locally to test? Some
       # CIs give an env var so you can tell if it is run via CI.
+      # Github: CI=true: https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+      # Gitlab: CI=true: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
       enabled: true
 
-      # Mark the pull request as a draft
+      # Mark the pull request as a draft (defult to false)
       is_draft: false
 
       # The following can be specified in pull request template
@@ -77,6 +94,8 @@ If run a the destination repo...
       # 
       # @Techassi: I would argue that the setting in this config
       # file takes precedence.
+      # @NickLarsenNZ: I would have thought the frontmatter overrides
+      # a general config, but I don't mind either way if it is documented
       # 
       # One can provide a string here to be used as the inline
       # template, or the explicit keys below:
@@ -98,6 +117,7 @@ If run a the destination repo...
       # pull/merge request.
       #
       # @Techassi: Suggestions: We should add 'tags' as an alias for this key.
+      # @NickLarsenNZ: was about to write the same comment.
       labels: [size/s]
 
       assignees: [developers]
