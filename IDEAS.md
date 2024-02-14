@@ -108,7 +108,10 @@ If run a the destination repo...
       # One can provide a string here to be used as the inline
       # template, or the explicit keys below:
       body:
-        template: Please double check the changes are safe before merging
+        template: |
+          > [!IMPORTANT]
+          > This Pull Request was automatically generated.
+          > Please double check the changes are safe before merging
 
         # OR template file (resolves to .crumpet/templates/body-template).
         template_file: body-template
