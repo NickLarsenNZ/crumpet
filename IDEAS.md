@@ -132,11 +132,13 @@ We want to provide multiple template helper functions, to easily render out comm
 such functions also helps users to avoid escaping curly brackets while producing other templated content (CI workflows
 for example). A few of these functions come to mind:
 
-| Input (Tera)                 | Rendered Output    | Notes                                                                                                                                  |
-| :--------------------------- | :----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `{{ github::expr(<EXPR>) }}` | `${{ <EXPR> }}`    | -                                                                                                                                      |
-| `{{ github::env(<VAR>) }}`   | `${{ env.<VAR> }}` | The same output can be achieved using `github::expr(env.<VAR>)`. This function simply provides a shorthand for such a common use-case. |
-| `{{ rand::nanoid }}`         | `<NANO_ID>`        | Outputs a random Nanoid. (Do we really need this?)                                                                                     |
+| Input (Tera)                     | Rendered Output    | Notes                                                                                                                                  |
+| :------------------------------- | :----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `{{ github::expr(<EXPR>) }}`     | `${{ <EXPR> }}`    | -                                                                                                                                      |
+| `{{ github::env(<VAR>) }}`       | `${{ env.<VAR> }}` | The same output can be achieved using `github::expr(env.<VAR>)`. This function simply provides a shorthand for such a common use-case. |
+| `{{ rand::nanoid() }}`           | `<NANO_ID>`        | Outputs a random Nanoid. (Do we really need this?)                                                                                     |
+| `{{ date::format("%Y-%m-%d") }}` | `2024-02-14`       | Outputs a formatted date                                                                                                               |
+| `{{ date::year()`                | `2024`             | Outputs the curent year                                                                                                                |
 
 ## High-Level Module Overview
 
