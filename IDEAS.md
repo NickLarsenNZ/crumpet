@@ -16,12 +16,14 @@
 ## Questions
 
 - [ ] Run `crumpet` at the template source (needs to know the remote repos to template, and have permission to raise PRs)
-- [ ] Run `crumpet` at the destination (no tracking required, simpler permissions for raising PRs, can run locally to initialise a new repo)
+- [ ] Run `crumpet` at the destination (no tracking required, simpler permissions for raising PRs, can run locally to
+      initialise a new repo)
 - [ ] How should we "mark" templated files? Two obvious options come to mind: `file.tera.<EXT>` or `file.<EXT>.tera`
   - @NickLarsenNZ: I think both should be valid. The former allows for better syntax highlighting.
-  - @Techassi: Good point. For files without extensions, this doesn't matter. We only need to adjust our stripping logic based on the presence of an extension
-- [ ] How do we handle files which are not templated (don't include above naming convention)? Just copy them over? Should
-      we make this behaviour configurable? (Yes)
+  - @Techassi: Good point. For files without extensions, this doesn't matter. We only need to adjust our stripping logic
+    based on the presence of an extension
+- [ ] How do we handle files which are not templated (don't include above naming convention)? Just copy them over?
+      Should we make this behaviour configurable? (Yes)
   - @NickLarsenNZ: I think just copied, because they might be static files that are still content templates
 - [ ] Solve all open questions about the example config file below.
 
@@ -37,6 +39,7 @@ If run a the destination repo...
 
 - Reserve `.crumpet/` to store crumpet related files (config, PR template(s))
 - `.crumpet/config.yml` example:
+
    ```yaml
     # What casing should we use for the keys? Kubernetes uses camelCase
     # and Rust uses snake_case. Serde supports both and more.
@@ -55,7 +58,7 @@ If run a the destination repo...
       # should allow referencing a (local) file path here.
       source: https://github.com/example/template
 
-      # @NickLarsenNZ: I think it is better to have a separate key 
+      # @NickLarsenNZ: I think it is better to have a separate key
       # for the path, rather than adding to the url above, but if we
       # support local paths for the source, then this feels a little
       # redundant. Unless the source should be the root because it
@@ -68,7 +71,7 @@ If run a the destination repo...
       # kind of complex enum.
       # @NickLarsenNZ: Good question. Maybe we should make the template
       # `source` key contain everything necessary for whatever backends.
-      # eg: 
+      # eg:
       #   source: https://github.com/example/template.git//my_template#abcdef
       #   source: git@github.com:example/template.git//my_template#abcdef
       #   source: ./my_template
@@ -91,12 +94,12 @@ If run a the destination repo...
 
       # The following can be specified in pull request template
       # frontmatter - which takes precedence?
-      # 
+      #
       # @Techassi: I would argue that the setting in this config
       # file takes precedence.
       # @NickLarsenNZ: I would have thought the frontmatter overrides
       # a general config, but I don't mind either way if it is documented
-      # 
+      #
       # One can provide a string here to be used as the inline
       # template, or the explicit keys below:
       title:

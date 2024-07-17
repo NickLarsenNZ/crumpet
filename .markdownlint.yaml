@@ -1,0 +1,13 @@
+---
+# All defaults or options can be checked here:
+# https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+
+# Default state for all rules
+default: true
+
+# MD013/line-length
+MD013:
+  tables: false
+  line_length: 120
+  heading_line_length: 80
+  code_block_line_length: 120

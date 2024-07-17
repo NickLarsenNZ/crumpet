@@ -34,10 +34,10 @@ pull_request:
 
   # The following can be specified in pull request template
   # frontmatter - which takes precedence?
-  # 
+  #
   # @Techassi: I would argue that the setting in this config
   # file takes precedence.
-  # 
+  #
   # One can provide a string here to be used as the inline
   # template, or the explicit keys below:
   title:

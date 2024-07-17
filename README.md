@@ -13,4 +13,3 @@ A repository templating engine for keeping similar repositories up-to-date.
 ## Install
 
 > Todo
-
