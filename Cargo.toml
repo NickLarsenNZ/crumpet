@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/*"]
+resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
@@ -9,6 +10,9 @@ edition = "2021"
 clap = { version = "4.4.18", features = ["derive", "env"] }
 clap_complete = "4.4.10"
 glob = "0.3.1"
-rstest = "0.18.2"
+rstest = "0.21.0"
+semver = { version = "1.0.23", features = ["serde"] }
+serde = { version = "1.0.204", features = ["derive"] }
+serde_yaml = "0.9.34+deprecated" # Maybe replace with https://docs.rs/serde_yml/latest/serde_yml/
 snafu = "0.8.0"
 tokio = { version = "1.36.0", features = ["rt-multi-thread", "macros", "fs"] }

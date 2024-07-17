@@ -1,0 +1,12 @@
+version: 0.0.1
+template:
+  source: https://github.com/my-org/my-template
+  template_directory: template
+  ref: abcdef0
+pull_request:
+  enabled: true
+  draft: false
+  title: !template ''
+  body: !template ''
+  labels:
+  - size/s

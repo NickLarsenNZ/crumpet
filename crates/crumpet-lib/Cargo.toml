@@ -6,5 +6,8 @@ edition = "2021"
 [dependencies]
 glob.workspace = true
 rstest.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
 snafu.workspace = true
 tokio.workspace = true
