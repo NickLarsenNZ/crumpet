@@ -1,3 +1,5 @@
+---
+# yamllint disable rule:line-length
 site_name: Crumpet - User Guide
 site_dir: .docs/build
 
@@ -22,7 +24,7 @@ theme:
         icon: material/toggle-switch
         name: Switch to light mode
 
-   # Navigation setup
+  # Navigation setup
   features:
     - navigation.instant     # Enable instant loading, this doesn't reload the page but fetches the contents via AJAX
     - navigation.tabs        # Enable tab navigation

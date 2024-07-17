@@ -20,12 +20,10 @@ rules:
     max: 1
   indentation:
     spaces: 2
-    indent-sequences: consistent
+    indent-sequences: consistent # NOTE (@NickLarsenNZ): I prefer false
   key-duplicates:
-    forbid-duplicated-merge-keys: true # NOTE (@NickLarsenNZ): I prefer false
+    forbid-duplicated-merge-keys: true
   line-length:
-     # NOTE (@NickLarsenNZ): I would prefer something a little wider like 100
-     # or 120
     max: 80
     level: warning
   quoted-strings:
