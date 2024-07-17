@@ -44,7 +44,7 @@ pub fn build_file_list(base_path: PathBuf) -> Result<Vec<PathBuf>> {
 pub fn build_glob_pattern(base_path: PathBuf) -> Result<String> {
     let base_path = base_path.absolutize().context(InvalidPathSnafu)?;
     let path = base_path.join(DEFAULT_MATCH_PATTERN);
-    Ok(path.into_str().context(InvalidPathSnafu)?.to_owned())
+    Ok(path.as_str().context(InvalidPathSnafu)?.to_owned())
 }
 
 // NOTE (@Techassi): Is there much added value to this function compared to

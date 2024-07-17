@@ -1,4 +1,7 @@
-use std::{env, path::PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use snafu::{OptionExt, ResultExt, Snafu};
 
@@ -14,7 +17,7 @@ pub enum Error {
 }
 
 pub trait PathBufExt: Sized {
-    fn into_str<'a>(&'a self) -> Result<&'a str>;
+    fn as_str(&self) -> Result<&str>;
 
     /// Returns any provided `path` as an absolute path. If the provided `path`
     /// is already absolute, it is returned as is.
@@ -24,7 +27,7 @@ pub trait PathBufExt: Sized {
 }
 
 impl PathBufExt for PathBuf {
-    fn into_str<'a>(&'a self) -> Result<&'a str> {
+    fn as_str(&self) -> Result<&str> {
         self.to_str().context(InvalidPathSnafu { path: self })
     }
 
@@ -53,7 +56,6 @@ impl PathBufExt for PathBuf {
     }
 }
 
-pub fn pathbuf_to_str<'a>(path: &'a PathBuf) -> Result<&'a str> {
-    path.to_str()
-        .context(InvalidPathSnafu { path: path.clone() })
+pub fn path_to_str(path: &Path) -> Result<&str> {
+    path.to_str().context(InvalidPathSnafu { path })
 }

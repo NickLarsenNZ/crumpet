@@ -82,7 +82,7 @@ impl Serialize for SourceIdentifier {
                 ))?;
                 serializer.serialize_str(path)
             }
-            SourceIdentifier::Git(url) => serializer.serialize_str(&url),
+            SourceIdentifier::Git(url) => serializer.serialize_str(url),
         }
     }
 }
