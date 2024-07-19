@@ -7,22 +7,71 @@ const fn r#false() -> bool {
     false
 }
 
+/// Crumpet config representation.
+///
+/// The configuration is typically stored in the template target directory
+/// under: `.crumpet/config.yml`.
+// NOTE (@NickLarsenNZ): The directory shouldn't be mentioned in the docs here,
+// that is the main bin will be responsible for setting the default location(s).
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Config {
+    /// The configuration schema semantic version.
+    ///
+    /// This is especially used to handle breaking changes across versions.
     pub version: Version,
+
+    /// Configuration pertaining to the template source.
+    ///
+    /// Example:
+    ///
+    /// ```yml
+    /// template:
+    ///   source: https://github.com/my-org/my-template
+    ///   ref: v1.0.1
+    /// ```
     pub template: TemplateConfig,
+
+    /// Configuration pertaining to raising Pull/Merge Requests.
+    ///
+    /// NOTE: This will only be used if `CI=true` (as is common in Github Actions and Gitlab CI/CD).
     pub pull_request: PullRequestConfig,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TemplateConfig {
+    /// The location of the source template
+    ///
+    /// This can be a local directory path, or a git reposirory URL (https/ssh).
+    ///
+    /// For example, all of these are valid sources:
+    ///
+    /// ```yml
+    /// source: /path/to/template
+    /// source: https://github.com/my-org/my-template
+    /// source: ssh://github.com:my-org/my-template
+    /// ```
     pub source: SourceIdentifier,
 
+    /// The directory inside the repository where the template can be found.
+    ///
+    /// Typically this is "template/", but users might choose a different
+    /// directory name, or a nested directory.
+    ///
+    /// ```yml
+    /// template_directory: tpl
+    /// template_directory: new/template
+    /// ```
     #[serde(default = "default_template_directory")]
     pub template_directory: PathBuf,
 
+    /// A [committish] to refer to a commit, tag, or branch.
+    ///
+    /// If left unset, the repository's default branch (`HEAD`) will be used.
+    /// NOTE: only used if the [`TemplateConfig::source`] is a git repository.
+    ///
+    /// [committish]: https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefcommit-ishacommit-ishalsocommittish
     #[serde(
         rename = "ref",
         default = "default_ref",
@@ -42,6 +91,8 @@ fn default_ref() -> Option<String> {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct PullRequestConfig {
+    // NOTE (@NickLarsenNZ): We should think about whether this defaults to true
+    // when CI=true.
     enabled: bool,
 
     /// Mark the pull request as a draft (default: false)
