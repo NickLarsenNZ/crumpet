@@ -35,7 +35,7 @@ pub struct Config {
     /// Configuration pertaining to raising Pull/Merge Requests.
     ///
     /// NOTE: This will only be used if `CI=true` (as is common in Github Actions and Gitlab CI/CD).
-    pub pull_request: PullRequestConfig,
+    pub pull_request: Option<PullRequestConfig>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -199,14 +199,14 @@ mod test {
                 template_directory: PathBuf::from("template"),
                 reference: Some(String::from("abcdef0")),
             },
-            pull_request: PullRequestConfig {
+            pull_request: Some(PullRequestConfig {
                 enabled: true,
                 draft: false,
                 title: TemplateSource::Template("".into()),
                 body: TemplateSource::Template("".into()),
                 labels: Some(vec!["size/s".into()]),
                 assignees: None,
-            },
+            }),
         };
 
         let yaml = serde_yaml::to_string(&original).unwrap();
