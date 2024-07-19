@@ -41,7 +41,7 @@ pub enum TemplateCommands {
 
 #[derive(Debug, Args)]
 pub struct TemplateRenderArgs {
-    /// Template souce
+    /// Template source
     /// Eg: https://github.com/example/template
     #[arg()]
     source: String,
