@@ -100,10 +100,10 @@ pub struct PullRequestConfig {
     draft: bool,
 
     /// Set the contents of the pull request title
-    title: TemplateSource,
+    title: PullRequestTemplateSource,
 
     /// Set the contents of the pull request body
-    body: TemplateSource,
+    body: PullRequestTemplateSource,
 
     /// Provide any number of labels / tags to be attached to the pull request
     #[serde(alias = "tags", skip_serializing_if = "Option::is_none")]
@@ -177,7 +177,7 @@ impl<'de> Deserialize<'de> for SourceIdentifier {
 // TODO (@Techassi): To make the in-place string and the variants work, we need our own serialize and deserialize
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum TemplateSource {
+pub enum PullRequestTemplateSource {
     Template(String),
 
     #[serde(rename = "template_file")]
@@ -202,8 +202,8 @@ mod test {
             pull_request: Some(PullRequestConfig {
                 enabled: true,
                 draft: false,
-                title: TemplateSource::Template("".into()),
-                body: TemplateSource::Template("".into()),
+                title: PullRequestTemplateSource::Template("".into()),
+                body: PullRequestTemplateSource::Template("".into()),
                 labels: Some(vec!["size/s".into()]),
                 assignees: None,
             }),
