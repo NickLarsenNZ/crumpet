@@ -3,7 +3,7 @@
 ## Local environment setup
 
 1. Ensure you have an up-to-date version of Rust (see: [rust-toolchain.toml](./rust-toolchain.toml)).
-2. Install [pre-commit] hooks: `pre-commit install`.
+2. Install [pre-commit] hooks: `pre-commit install -t pre-commit -t commit-msg`.
 
 [pre-commit]: https://pre-commit.com/
 
