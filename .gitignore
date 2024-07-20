@@ -4,3 +4,7 @@
 # Docs
 .docs
 .venv
+
+# nix / direnv
+.direnv/
+.envrc
