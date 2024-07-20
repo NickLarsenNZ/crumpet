@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::Write, path::PathBuf};
 
 use semver::Version;
 use serde::{de::Visitor, Deserialize, Serialize};
@@ -43,7 +43,7 @@ pub struct Config {
 pub struct TemplateConfig {
     /// The location of the source template
     ///
-    /// This can be a local directory path, or a git reposirory URL (https/ssh).
+    /// This can be a local directory path, or a git repository URL (https/ssh).
     ///
     /// For example, all of these are valid sources:
     ///
@@ -53,18 +53,6 @@ pub struct TemplateConfig {
     /// source: ssh://github.com:my-org/my-template
     /// ```
     pub source: SourceIdentifier,
-
-    /// The directory inside the repository where the template can be found.
-    ///
-    /// Typically this is "template/", but users might choose a different
-    /// directory name, or a nested directory.
-    ///
-    /// ```yml
-    /// template_directory: tpl
-    /// template_directory: new/template
-    /// ```
-    #[serde(default = "default_template_directory")]
-    pub template_directory: PathBuf,
 
     /// A [committish] to refer to a commit, tag, or branch.
     ///
@@ -78,10 +66,6 @@ pub struct TemplateConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub reference: Option<String>,
-}
-
-fn default_template_directory() -> PathBuf {
-    PathBuf::from("template")
 }
 
 fn default_ref() -> Option<String> {
@@ -116,8 +100,11 @@ pub struct PullRequestConfig {
 
 #[derive(Debug, PartialEq)]
 pub enum SourceIdentifier {
-    File(PathBuf),
-    Git(gix::Url),
+    Path(PathBuf),
+    Git {
+        url: gix::Url,
+        path: Option<PathBuf>,
+    },
 }
 
 impl Serialize for SourceIdentifier {
@@ -126,14 +113,24 @@ impl Serialize for SourceIdentifier {
         S: serde::Serializer,
     {
         match self {
-            SourceIdentifier::File(path) => {
+            SourceIdentifier::Path(path) => {
                 let path = path.to_str().ok_or(serde::ser::Error::custom(
                     "path contains invalid UTF-8 characters",
                 ))?;
                 serializer.serialize_str(path)
             }
-            SourceIdentifier::Git(raw_url) => {
-                let url = raw_url.to_bstring().to_string();
+            SourceIdentifier::Git { url, path } => {
+                let mut url = url.to_bstring().to_string();
+
+                if let Some(path) = path {
+                    url.write_fmt(format_args!("?path={path}", path = path.display()))
+                        .map_err(|err| {
+                            serde::ser::Error::custom(format!(
+                                "failed to write string content to source identifier: {err}"
+                            ))
+                        })?;
+                }
+
                 serializer.serialize_str(&url)
             }
         }
@@ -158,14 +155,30 @@ impl<'de> Deserialize<'de> for SourceIdentifier {
             where
                 E: serde::de::Error,
             {
-                // NOTE (@Techassi): Sadly the find_scheme function of gix is
-                // private and as such we cannot use that to check IF we should
-                // try to parse the input as a git url. That's the reason why
-                // we "brute-force" the parsing first, and then fall back to
-                // parsing the input as a local path.
-                match gix::Url::try_from(v) {
-                    Ok(url) => Ok(SourceIdentifier::Git(url)),
-                    Err(_) => Ok(SourceIdentifier::File(PathBuf::from(v))),
+                // First, we check if the input can be split once at '?path=' to
+                // detect if the user provided a source which includes a custom
+                // template directory.
+                match v.split_once("?path=") {
+                    Some((url, path)) => {
+                        let url = gix::Url::try_from(url).map_err(|err| {
+                            serde::de::Error::custom(format!("failed to parse git url: {err}"))
+                        })?;
+
+                        Ok(SourceIdentifier::Git {
+                            url,
+                            path: Some(PathBuf::from(path)),
+                        })
+                    }
+
+                    // NOTE (@Techassi): Sadly the find_scheme function of gix is
+                    // private and as such we cannot use that to check IF we should
+                    // try to parse the input as a git url. That's the reason why
+                    // we "brute-force" the parsing first, and then fall back to
+                    // parsing the input as a local path.
+                    None => match gix::Url::try_from(v) {
+                        Ok(url) => Ok(SourceIdentifier::Git { url, path: None }),
+                        Err(_) => Ok(SourceIdentifier::Path(PathBuf::from(v))),
+                    },
                 }
             }
         }
@@ -214,10 +227,11 @@ mod test {
         let original = Config {
             version: Version::new(0, 0, 1),
             template: TemplateConfig {
-                source: SourceIdentifier::Git(
-                    gix::Url::from_bytes("https://github.com/my-org/my-template".into()).unwrap(),
-                ),
-                template_directory: PathBuf::from("template"),
+                source: SourceIdentifier::Git {
+                    url: gix::Url::from_bytes("https://github.com/my-org/my-template".into())
+                        .unwrap(),
+                    path: Some(PathBuf::from("custom/template_dir")),
+                },
                 reference: Some(String::from("abcdef0")),
             },
             pull_request: Some(PullRequestConfig {
@@ -232,6 +246,8 @@ mod test {
 
         let yaml = serde_yaml::to_string(&original).unwrap();
         let copy: Config = serde_yaml::from_str(&yaml).unwrap();
+
+        println!("{yaml}");
 
         assert_eq!(original, copy);
     }

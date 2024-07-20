@@ -56,14 +56,7 @@ If run a the destination repo...
       # obvious one is a remote Git repo referenced by a URL. We
       # also need to support the git+ssh scheme. Additionally, we
       # should allow referencing a (local) file path here.
-      source: https://github.com/example/template
-
-      # @NickLarsenNZ: I think it is better to have a separate key
-      # for the path, rather than adding to the url above, but if we
-      # support local paths for the source, then this feels a little
-      # redundant. Unless the source should be the root because it
-      # contains some metadata aside from the template files.
-      template_directory: my_template # defaults to template
+      source: https://github.com/example/template?path=custom/template_dir
 
       # Add documentation for this key, it basically can be a tag,
       # commit or branch - a commitish. When we also support local
