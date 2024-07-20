@@ -16,6 +16,7 @@
                 pkgs = import nixpkgs {
                     inherit system overlays;
                 };
+                rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
             in with pkgs; {
                 # packages.default = derivation {
                 #     inherit name src system;
@@ -23,7 +24,7 @@
                 #     args = ["-c" "echo foo > $out"];
                 # };
                 devShells.default = mkShell {
-                    buildInputs = [ rust-bin.stable.latest.default ];
+                    buildInputs = [ rustToolchain ];
                 };
             }
         );
