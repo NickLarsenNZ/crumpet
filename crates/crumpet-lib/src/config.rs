@@ -3,9 +3,14 @@ use std::{fmt::Write, path::PathBuf};
 use semver::Version;
 use serde::{de::Visitor, Deserialize, Serialize};
 
+use crate::fs::paths::PathBufExt;
+
 const fn r#false() -> bool {
     false
 }
+
+// TODO (@Techassi): Add config validation, because currently the filepaths used
+// in various fields can be used for path traversal attacks.
 
 /// Crumpet config representation.
 ///
@@ -25,7 +30,7 @@ pub struct Config {
     ///
     /// Example:
     ///
-    /// ```yml
+    /// ```yaml
     /// template:
     ///   source: https://github.com/my-org/my-template
     ///   ref: v1.0.1
@@ -47,7 +52,7 @@ pub struct TemplateConfig {
     ///
     /// For example, all of these are valid sources:
     ///
-    /// ```yml
+    /// ```yaml
     /// source: /path/to/template
     /// source: https://github.com/my-org/my-template
     /// source: ssh://github.com:my-org/my-template
@@ -191,14 +196,14 @@ impl<'de> Deserialize<'de> for SourceIdentifier {
 ///
 /// This can either be a file, or an inline string.
 ///
-/// ```yml
+/// ```yaml
 /// title: Pull Request title
 /// body: path/to/template/from/the/template.md # if you want to use a common template across all repositories
 /// ```
 ///
 /// Or:
 ///
-/// ```yml
+/// ```yaml
 /// title: chore: Template Update {{ template.ref }}
 /// body: |
 ///   # Template Update
@@ -207,15 +212,69 @@ impl<'de> Deserialize<'de> for SourceIdentifier {
 /// ```
 // TODO (@Techassi): To make the in-place string and the variants work, we need our own serialize and deserialize
 // TODO (@NickLarsenNZ): Allow template variables to be used so the content can be dynamic?
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, PartialEq)]
 pub enum PullRequestTemplateSource {
     /// Inline content template
     Template(String),
 
     /// Content template from a file
-    #[serde(rename = "template_file")]
     File(PathBuf),
+}
+
+impl Serialize for PullRequestTemplateSource {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            PullRequestTemplateSource::Template(string) => serializer.serialize_str(&string),
+            PullRequestTemplateSource::File(path) => {
+                let path = path.to_str().ok_or(serde::ser::Error::custom(
+                    "path contains invalid UTF-8 characters",
+                ))?;
+                serializer.serialize_str(path)
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for PullRequestTemplateSource {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct PullRequestTemplateSourceVisitor;
+
+        impl<'de> Visitor<'de> for PullRequestTemplateSourceVisitor {
+            type Value = PullRequestTemplateSource;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a valid inline template string or path to template file")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if v.is_empty() {
+                    return Ok(PullRequestTemplateSource::Template(v.to_owned()));
+                }
+
+                // TODO (@Techassi): Remove unwrap
+                let abs_path = PathBuf::from(v).absolutize().unwrap();
+
+                match std::fs::metadata(abs_path).map(|meta| meta.is_file()) {
+                    Ok(is_file) if is_file => Ok(PullRequestTemplateSource::File(PathBuf::from(v))),
+                    Ok(is_file) if !is_file => {
+                        Err(serde::de::Error::custom("template path is not a file"))
+                    }
+                    _ => Ok(PullRequestTemplateSource::Template(v.to_owned())),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(PullRequestTemplateSourceVisitor)
+    }
 }
 
 #[cfg(test)]
@@ -237,8 +296,10 @@ mod test {
             pull_request: Some(PullRequestConfig {
                 enabled: true,
                 draft: false,
-                title: PullRequestTemplateSource::Template("".into()),
-                body: PullRequestTemplateSource::Template("".into()),
+                title: PullRequestTemplateSource::File("../../fixtures/file_01.tera".into()),
+                body: PullRequestTemplateSource::Template(
+                    "chore: Update templated files ({{ ref }})".into(),
+                ),
                 labels: Some(vec!["size/s".into()]),
                 assignees: None,
             }),

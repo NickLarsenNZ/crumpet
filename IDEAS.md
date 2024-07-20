@@ -94,23 +94,12 @@ If run a the destination repo...
       # a general config, but I don't mind either way if it is documented
       #
       # One can provide a string here to be used as the inline
-      # template, or the explicit keys below:
-      title:
-        template: "chore: Apply template changes from ref:{{revision}}"
-
-        # OR template file (resolves to .crumpet/templates/title-template).
-        template_file: title-template
+      # template, or a path to a template file.
+      title: "chore: Apply template changes from ref:{{revision}}"
 
       # One can provide a string here to be used as the inline
-      # template, or the explicit keys below:
-      body:
-        template: |
-          > [!IMPORTANT]
-          > This Pull Request was automatically generated.
-          > Please double check the changes are safe before merging
-
-        # OR template file (resolves to .crumpet/templates/body-template).
-        template_file: body-template
+      # template, or a path to a template file.
+      body: body-template.tpl
 
       # Some Git platforms support labels/tags to be attached to the created
       # pull/merge request.
