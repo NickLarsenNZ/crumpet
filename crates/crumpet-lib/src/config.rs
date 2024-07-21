@@ -5,8 +5,17 @@ use serde::{de::Visitor, Deserialize, Serialize};
 
 use crate::fs::paths::PathBufExt;
 
-const fn r#false() -> bool {
-    false
+// Serde default functions
+mod serde_default {
+    pub const fn r#false() -> bool {
+        false
+    }
+
+    pub fn r#ref() -> Option<String> {
+        Some(String::from("HEAD"))
+    }
+
+
 }
 
 // TODO (@Techassi): Add config validation, because currently the filepaths used
@@ -67,7 +76,7 @@ pub struct TemplateConfig {
     /// [committish]: https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefcommit-ishacommit-ishalsocommittish
     #[serde(
         rename = "ref",
-        default = "default_ref",
+        default = "serde_default::r#ref",
         skip_serializing_if = "Option::is_none"
     )]
     pub reference: Option<String>,
@@ -85,7 +94,7 @@ pub struct PullRequestConfig {
     enabled: bool,
 
     /// Mark the pull request as a draft (default: false)
-    #[serde(default = "r#false")]
+    #[serde(default = "serde_default::r#false")]
     draft: bool,
 
     /// Set the contents of the pull request title
