@@ -1,7 +1,12 @@
-use std::{fmt::Write, path::PathBuf};
+use std::{
+    ops::{Deref, DerefMut},
+    path::PathBuf,
+};
 
+use gix::{url::Scheme, Url};
 use semver::Version;
 use serde::{de::Visitor, Deserialize, Serialize};
+use snafu::Snafu;
 
 use crate::fs::paths::PathBufExt;
 
@@ -14,8 +19,48 @@ mod serde_default {
     pub fn r#ref() -> Option<String> {
         Some(String::from("HEAD"))
     }
+}
 
+#[derive(Debug, Snafu)]
+pub enum ValidationError {}
 
+pub struct Warnings<T: std::fmt::Display = String>(Vec<T>);
+
+impl<T> Deref for Warnings<T>
+where
+    T: std::fmt::Display,
+{
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Warnings {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> Warnings<T>
+where
+    T: std::fmt::Display,
+{
+    pub fn new() -> Self {
+        Self(vec![])
+    }
+
+    pub fn to_option(self) -> Option<Self> {
+        match self.0.is_empty() {
+            true => None,
+            false => Some(self),
+        }
+    }
+
+    pub fn inner(self) -> Vec<T> {
+        self.0
+    }
 }
 
 // TODO (@Techassi): Add config validation, because currently the filepaths used
@@ -52,20 +97,39 @@ pub struct Config {
     pub pull_request: Option<PullRequestConfig>,
 }
 
+impl Config {
+    pub fn validate(&self) -> Result<Option<Warnings>, ValidationError> {
+        let mut warnings = Warnings::new();
+
+        if let Some(w) = self.template.validate()? {
+            warnings.extend(w.inner())
+        }
+
+        if let Some(pull_request) = &self.pull_request {
+            if let Some(w) = pull_request.validate()? {
+                warnings.extend(w.inner())
+            }
+        }
+
+        Ok(Some(warnings))
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TemplateConfig {
-    /// The location of the source template
+    /// The location of the template source.
     ///
     /// This can be a local directory path, or a git repository URL (https/ssh).
-    ///
     /// For example, all of these are valid sources:
     ///
     /// ```yaml
-    /// source: /path/to/template
+    /// source: path/to/template
     /// source: https://github.com/my-org/my-template
-    /// source: ssh://github.com:my-org/my-template
+    /// source: ssh://github.com:my-org/my-template?path=custom/template_dir
     /// ```
+    ///
+    /// Also see [`SourceIdentifier`].
     pub source: SourceIdentifier,
 
     /// A [committish] to refer to a commit, tag, or branch.
@@ -82,8 +146,23 @@ pub struct TemplateConfig {
     pub reference: Option<String>,
 }
 
-fn default_ref() -> Option<String> {
-    Some(String::from("HEAD"))
+impl TemplateConfig {
+    fn validate(&self) -> Result<Option<Warnings>, ValidationError> {
+        let mut warnings = Warnings::new();
+
+        if self.source.scheme == Scheme::File {
+            let path = self.source.path();
+
+            if !path.is_absolute() {
+                warnings.push(format!(
+                    "{path} is not an absolute path",
+                    path = path.display()
+                ))
+            }
+        }
+
+        Ok(warnings.to_option())
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -112,42 +191,30 @@ pub struct PullRequestConfig {
     assignees: Option<Vec<String>>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum SourceIdentifier {
-    Path(PathBuf),
-    Git {
-        url: gix::Url,
-        path: Option<PathBuf>,
-    },
+impl PullRequestConfig {
+    fn validate(&self) -> Result<Option<Warnings>, ValidationError> {
+        Ok(None)
+    }
 }
 
-impl Serialize for SourceIdentifier {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            SourceIdentifier::Path(path) => {
-                let path = path.to_str().ok_or(serde::ser::Error::custom(
-                    "path contains invalid UTF-8 characters",
-                ))?;
-                serializer.serialize_str(path)
-            }
-            SourceIdentifier::Git { url, path } => {
-                let mut url = url.to_bstring().to_string();
+/// The location of the template source.
+///
+/// This can be a local directory path, or a git repository URL (https/ssh).
+/// For example, all of these are valid sources:
+///
+/// ```yaml
+/// source: path/to/template
+/// source: https://github.com/my-org/my-template
+/// source: ssh://github.com:my-org/my-template?path=custom/template_dir
+/// ```
+#[derive(Debug, PartialEq)]
+pub struct SourceIdentifier(Url);
 
-                if let Some(path) = path {
-                    url.write_fmt(format_args!("?path={path}", path = path.display()))
-                        .map_err(|err| {
-                            serde::ser::Error::custom(format!(
-                                "failed to write string content to source identifier: {err}"
-                            ))
-                        })?;
-                }
+impl Deref for SourceIdentifier {
+    type Target = Url;
 
-                serializer.serialize_str(&url)
-            }
-        }
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -162,42 +229,34 @@ impl<'de> Deserialize<'de> for SourceIdentifier {
             type Value = SourceIdentifier;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a local file path or a remote git repository url")
+                formatter.write_str("a valid git url/path")
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                // First, we check if the input can be split once at '?path=' to
-                // detect if the user provided a source which includes a custom
-                // template directory.
-                match v.split_once("?path=") {
-                    Some((url, path)) => {
-                        let url = gix::Url::try_from(url).map_err(|err| {
-                            serde::de::Error::custom(format!("failed to parse git url: {err}"))
-                        })?;
-
-                        Ok(SourceIdentifier::Git {
-                            url,
-                            path: Some(PathBuf::from(path)),
-                        })
-                    }
-
-                    // NOTE (@Techassi): Sadly the find_scheme function of gix is
-                    // private and as such we cannot use that to check IF we should
-                    // try to parse the input as a git url. That's the reason why
-                    // we "brute-force" the parsing first, and then fall back to
-                    // parsing the input as a local path.
-                    None => match gix::Url::try_from(v) {
-                        Ok(url) => Ok(SourceIdentifier::Git { url, path: None }),
-                        Err(_) => Ok(SourceIdentifier::Path(PathBuf::from(v))),
-                    },
-                }
+                let url = Url::try_from(v).map_err(|err| serde::de::Error::custom(err))?;
+                Ok(SourceIdentifier(url))
             }
         }
 
         deserializer.deserialize_str(SourceIdentifierVisitor)
+    }
+}
+
+impl Serialize for SourceIdentifier {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{}", self.0))
+    }
+}
+
+impl SourceIdentifier {
+    pub fn path(&self) -> PathBuf {
+        PathBuf::from(self.path.to_string())
     }
 }
 
@@ -219,7 +278,6 @@ impl<'de> Deserialize<'de> for SourceIdentifier {
 ///
 ///   This change was generated by {{ template.source }}@{{ template.ref }}
 /// ```
-// TODO (@Techassi): To make the in-place string and the variants work, we need our own serialize and deserialize
 // TODO (@NickLarsenNZ): Allow template variables to be used so the content can be dynamic?
 #[derive(Debug, PartialEq)]
 pub enum PullRequestTemplateSource {
@@ -288,6 +346,8 @@ impl<'de> Deserialize<'de> for PullRequestTemplateSource {
 
 #[cfg(test)]
 mod test {
+    use gix::Url;
+
     use super::*;
 
     #[test]
@@ -295,11 +355,9 @@ mod test {
         let original = Config {
             version: Version::new(0, 0, 1),
             template: TemplateConfig {
-                source: SourceIdentifier::Git {
-                    url: gix::Url::from_bytes("https://github.com/my-org/my-template".into())
-                        .unwrap(),
-                    path: Some(PathBuf::from("custom/template_dir")),
-                },
+                source: SourceIdentifier(
+                    Url::from_bytes("https://github.com/my-org/my-template".into()).unwrap(),
+                ),
                 reference: Some(String::from("abcdef0")),
             },
             pull_request: Some(PullRequestConfig {
@@ -314,11 +372,57 @@ mod test {
             }),
         };
 
+        if let Some(warnings) = original.validate().expect("valid config") {
+            assert!(warnings.is_empty())
+        }
+
         let yaml = serde_yaml::to_string(&original).unwrap();
         let copy: Config = serde_yaml::from_str(&yaml).unwrap();
 
         println!("{yaml}");
 
         assert_eq!(original, copy);
+    }
+
+    #[test]
+    fn warnings() {
+        let original = Config {
+            version: Version::new(0, 0, 1),
+            template: TemplateConfig {
+                source: SourceIdentifier(Url::from_bytes("../Cargo.toml".into()).unwrap()),
+                reference: Some(String::from("abcdef0")),
+            },
+            pull_request: Some(PullRequestConfig {
+                enabled: true,
+                draft: false,
+                title: PullRequestTemplateSource::File("../../fixtures/file_01.tera".into()),
+                body: PullRequestTemplateSource::Template(
+                    "chore: Update templated files ({{ ref }})".into(),
+                ),
+                labels: Some(vec!["size/s".into()]),
+                assignees: None,
+            }),
+        };
+
+        if let Some(warnings) = original.validate().expect("valid config") {
+            assert!(!warnings.is_empty());
+
+            for warning in warnings.inner() {
+                println!("warning: {warning}");
+            }
+        }
+
+        let yaml = serde_yaml::to_string(&original).unwrap();
+        let copy: Config = serde_yaml::from_str(&yaml).unwrap();
+
+        println!("{yaml}");
+
+        assert_eq!(original, copy);
+    }
+
+    #[test]
+    fn path() {
+        let url = Url::try_from("../Cargo.toml").unwrap();
+        println!("{url:?}");
     }
 }
