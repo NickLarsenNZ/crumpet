@@ -21,13 +21,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # # for cargo-audit, cargo-deny, etc
-    # advisory-db = {
-    #   url = "github:rustsec/advisory-db";
-    #   flake = false;
-    # };
+    # for cargo-audit, cargo-deny, etc
+    advisory-db = {
+      url = "github:rustsec/advisory-db";
+      flake = false;
+    };
   };
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, crane }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, crane, advisory-db }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
@@ -68,7 +68,7 @@
 
           # TODO (@NickLarsenNZ): Look into cargo-nextest, add it into checks:
           # See: https://github.com/ipetkov/crane/blob/8a68b987c476a33e90f203f0927614a75c3f47ea/examples/quick-start-workspace/flake.nix#L133-L140
-          # doCheck = false;
+          doCheck = false;
         };
 
         # Helper function for building a crate by name
@@ -78,7 +78,7 @@
           src = ./.;
         });
 
-        # The crates to build
+        # The crates to build. Be sure to inherit them in the checks
         crumpet-cli = cargoBuildForCrate "crumpet-cli";
 
         nativeBuildInputs = with pkgs; [ rustToolchain rustToolchainExtensions ]; # compile time inputs
@@ -86,7 +86,42 @@
       in
       with pkgs; {
         # nix flake check
-        checks = { };
+        checks = {
+          inherit crumpet-cli;
+
+          cargo-clippy = craneLib.cargoClippy (commonArgs // {
+            inherit cargoArtifacts;
+            # TODO (@NickLarsenNZ): Deny clippy warnings
+            # cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+            cargoClippyExtraArgs = "--all-targets";
+          });
+
+          cargo-doc = craneLib.cargoDoc (commonArgs // {
+            inherit cargoArtifacts;
+          });
+
+          cargo-fmt = craneLib.cargoFmt (commonArgs // {
+            inherit cargoArtifacts;
+          });
+
+          cargo-audit = craneLib.cargoAudit (commonArgs // {
+            inherit cargoArtifacts advisory-db;
+          });
+
+          # TODO (@NickLarsenNZ): Make a deny.toml
+          # cargo-deny = craneLib.cargoDeny (commonArgs // {
+          #   inherit cargoArtifacts;
+          # });
+
+          # use cargo-nextest instead of cargo test. set doCheck = false
+          cargo-nextest = craneLib.cargoNextest (commonArgs // {
+            inherit cargoArtifacts;
+            partitions = 1;
+            partitionType = "count";
+            # withLlvmCov = true; # partitions must be 1
+          });
+
+        };
 
         # nix build
         # nix build .#<name>
