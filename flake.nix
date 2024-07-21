@@ -63,7 +63,6 @@
 
         # Extend commonArgs with crate name and version
         individualCrateArgs = crate: commonArgs // {
-          inherit cargoArtifacts;
           inherit (craneLib.crateNameFromCargoToml { cargoToml = "${src}/crates/${crate}/Cargo.toml"; }) pname version;
 
           # TODO (@NickLarsenNZ): Look into cargo-nextest, add it into checks:
@@ -73,9 +72,8 @@
 
         # Helper function for building a crate by name
         cargoBuildForCrate = crate: craneLib.buildPackage (individualCrateArgs crate // {
+          inherit src;
           cargoExtraArgs = "-p ${crate}";
-          # TODO (@NickLarsenNZ): See if we need to reduce the src to only what is necessary
-          src = ./.;
         });
 
         # The crates to build. Be sure to inherit them in the checks
