@@ -4,3 +4,8 @@
 # Docs
 .docs
 .venv
+
+# nix and direnv
+result
+.direnv/
+.envrc
