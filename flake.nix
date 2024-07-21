@@ -1,37 +1,110 @@
 {
+  description = "Crumpet workspace";
+
+  # tip: use `nix flake metadata` to see which inputs depend on existing inputs
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     flake-utils.url = "github:numtide/flake-utils";
+
+    # rust-toolchain
+    # TODO (@NickLarsenNZ): Look into https://github.com/nix-community/fenix. Is it only nightly?
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Build cargo projects
+    # NOTE (@NickLarsenNZ): Examples here https://github.com/ipetkov/crane/blob/master/examples/quick-start-workspace/flake.nix
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # # for cargo-audit, cargo-deny, etc
+    # advisory-db = {
+    #   url = "github:rustsec/advisory-db";
+    #   flake = false;
+    # };
   };
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, crane }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
         };
+
+        # Setup the rust-toolchain
         rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml; # runtime inputs
-        rustToolchainExtensions = (rustToolchain.rust.override {
+        rustToolchainExtensions = (rustToolchain.override {
           extensions = [ "rust-src" ];
         });
         RUST_SRC_PATH = "${rustToolchainExtensions}/lib/rustlib/src/rust/library";
+
+        # Cargo via crane
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+        src = craneLib.cleanCargoSource ./.;
+
+        # Common args used for building deps and workspace member crates
+        commonArgs = {
+          inherit src buildInputs nativeBuildInputs;
+          # Needs a pname here, otherwise you need to provide it in the workspace Cargo.toml:
+          # ```toml
+          # [workspace.metadata.crane]
+          # name = "crumpet-workspace"
+          # ```
+          pname = "crumpet-workspace";
+          strictDeps = true;
+        };
+
+        # TODO (@NickLarsenNZ): Look into hakari and cachix
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+        # Extend commonArgs with crate name and version
+        individualCrateArgs = crate: commonArgs // {
+          inherit cargoArtifacts;
+          inherit (craneLib.crateNameFromCargoToml { cargoToml = "${src}/crates/${crate}/Cargo.toml"; }) pname version;
+
+          # TODO (@NickLarsenNZ): Look into cargo-nextest, add it into checks:
+          # See: https://github.com/ipetkov/crane/blob/8a68b987c476a33e90f203f0927614a75c3f47ea/examples/quick-start-workspace/flake.nix#L133-L140
+          # doCheck = false;
+        };
+
+        # Helper function for building a crate by name
+        cargoBuildForCrate = crate: craneLib.buildPackage (individualCrateArgs crate // {
+          cargoExtraArgs = "-p ${crate}";
+          # TODO (@NickLarsenNZ): See if we need to reduce the src to only what is necessary
+          src = ./.;
+        });
+
+        # The crates to build
+        crumpet-cli = cargoBuildForCrate "crumpet-cli";
+
         nativeBuildInputs = with pkgs; [ rustToolchain rustToolchainExtensions ]; # compile time inputs
-        buildInputs = with pkgs; [ ];
+        buildInputs = with pkgs; [ ]; # runtime inputs
       in
       with pkgs; {
-        # packages.default = derivation {
-        #     inherit name src system;
-        #     builder = with pkgs; "${bash}/bin/bash";
-        #     args = ["-c" "echo foo > $out"];
-        # };
+        # nix flake check
+        checks = { };
+
+        # nix build
+        # nix build .#<name>
+        packages = {
+          inherit crumpet-cli;
+          default = crumpet-cli;
+        };
+
+        # nix run
+        apps.default = flake-utils.lib.mkApp {
+          drv = crumpet-cli;
+        };
+
+        # nix develop
+        # nix develop .#<name>
         devShells.default = mkShell {
-          inherit buildInputs nativeBuildInputs;
+          inherit RUST_SRC_PATH;
+          inputsFrom = [ crumpet-cli ];
         };
       }
     );

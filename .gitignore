@@ -5,6 +5,7 @@
 .docs
 .venv
 
-# nix / direnv
+# nix and direnv
+result
 .direnv/
 .envrc
