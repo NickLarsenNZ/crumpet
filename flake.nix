@@ -46,6 +46,11 @@
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
         src = craneLib.cleanCargoSource ./.;
 
+        # Create a filter for cargo sources and test fixtures (to be used to filter src in tests)
+        fixturesFilter = path: _type: builtins.match "^\./fixtures" path != null;
+        fixturesOrCargo = path: type:
+          (fixturesFilter path type) || (craneLib.filterCargoSources path type);
+
         # Common args used for building deps and workspace member crates
         commonArgs = {
           inherit src buildInputs nativeBuildInputs;
@@ -114,9 +119,15 @@
           # use cargo-nextest instead of cargo test. set doCheck = false
           cargo-nextest = craneLib.cargoNextest (commonArgs // {
             inherit cargoArtifacts;
+            src = lib.cleanSourceWith {
+              src = ./.; # The original, unfiltered source
+              filter = fixturesOrCargo;
+              name = "source"; # Be reproducible, regardless of the directory name
+            };
             partitions = 1;
             partitionType = "count";
             # withLlvmCov = true; # partitions must be 1
+            cargoNextestExtraArgs = "--no-capture";
           });
 
         };
